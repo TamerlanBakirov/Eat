@@ -1,18 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { getSessionUserId } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { ACTIVITY_LABELS, DIET_LABELS, GOAL_LABELS } from "@/lib/labels";
+import { mealPlanFromDb, profileFromDb } from "@/lib/serialize";
+import { buildShoppingList } from "@/lib/shopping";
 import type { MealPlan, UserProfile } from "@/lib/types";
-import {
-  ACTIVITY_LABELS,
-  DIET_LABELS,
-  GOAL_LABELS,
-} from "@/lib/labels";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MODEL = "claude-opus-4-8";
 
-// Tool schema forces Claude to return a structured meal plan.
 const mealPlanTool: Anthropic.Tool = {
   name: "save_meal_plan",
   description: "Kullanıcı için oluşturulan haftalık öğün planını kaydeder.",
@@ -30,10 +29,7 @@ const mealPlanTool: Anthropic.Tool = {
         items: {
           type: "object",
           properties: {
-            day: {
-              type: "string",
-              description: "Günün adı, ör. Pazartesi",
-            },
+            day: { type: "string", description: "Günün adı, ör. Pazartesi" },
             meals: {
               type: "array",
               items: {
@@ -90,9 +86,7 @@ const mealPlanTool: Anthropic.Tool = {
 
 function buildPrompt(profile: UserProfile): string {
   const allergies =
-    profile.allergies.length > 0
-      ? profile.allergies.join(", ")
-      : "yok";
+    profile.allergies.length > 0 ? profile.allergies.join(", ") : "yok";
   return `Aşağıdaki kullanıcı için 7 günlük, kişiselleştirilmiş ve sağlıklı bir öğün planı oluştur.
 
 Kullanıcı bilgileri:
@@ -119,31 +113,48 @@ Kurallar:
 - Sonucu yalnızca save_meal_plan aracını çağırarak döndür.`;
 }
 
-export async function POST(req: Request) {
+// Return the user's most recent saved plan.
+export async function GET() {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Oturum gerekli." }, { status: 401 });
+  }
+  const row = await prisma.mealPlan.findFirst({
+    where: { userId },
+    orderBy: { generatedAt: "desc" },
+  });
+  return NextResponse.json({ plan: row ? mealPlanFromDb(row) : null });
+}
+
+export async function POST() {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Oturum gerekli." }, { status: 401 });
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "ANTHROPIC_API_KEY tanımlı değil. Lütfen .env.local dosyasına ekleyin.",
+          "ANTHROPIC_API_KEY tanımlı değil. Lütfen .env dosyasına ekleyin.",
       },
       { status: 500 }
     );
   }
 
-  let profile: UserProfile;
-  try {
-    const body = await req.json();
-    profile = body.profile;
-    if (!profile || !profile.targetCalories) {
-      throw new Error("Geçersiz profil");
-    }
-  } catch {
-    return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
+  const profileRow = await prisma.profile.findUnique({ where: { userId } });
+  if (!profileRow) {
+    return NextResponse.json(
+      { error: "Önce profilini oluştur." },
+      { status: 400 }
+    );
   }
+  const profile = profileFromDb(profileRow);
 
   const client = new Anthropic({ apiKey });
 
+  let plan: MealPlan;
   try {
     const message = await client.messages.create({
       model: MODEL,
@@ -156,7 +167,6 @@ export async function POST(req: Request) {
     const toolUse = message.content.find(
       (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
     );
-
     if (!toolUse) {
       return NextResponse.json(
         { error: "Model bir plan döndürmedi." },
@@ -165,12 +175,7 @@ export async function POST(req: Request) {
     }
 
     const data = toolUse.input as Omit<MealPlan, "generatedAt">;
-    const plan: MealPlan = {
-      ...data,
-      generatedAt: new Date().toISOString(),
-    };
-
-    return NextResponse.json({ plan });
+    plan = { ...data, generatedAt: new Date().toISOString() };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Bilinmeyen hata";
     return NextResponse.json(
@@ -178,4 +183,31 @@ export async function POST(req: Request) {
       { status: 502 }
     );
   }
+
+  // Persist the plan and rebuild the shopping list atomically.
+  const shoppingItems = buildShoppingList(plan);
+  const saved = await prisma.$transaction(async (tx) => {
+    const row = await tx.mealPlan.create({
+      data: {
+        userId,
+        summary: plan.summary,
+        days: JSON.stringify(plan.days),
+      },
+    });
+    await tx.shoppingItem.deleteMany({ where: { userId } });
+    if (shoppingItems.length > 0) {
+      await tx.shoppingItem.createMany({
+        data: shoppingItems.map((item, i) => ({
+          userId,
+          name: item.name,
+          amount: item.amount,
+          checked: false,
+          sort: i,
+        })),
+      });
+    }
+    return row;
+  });
+
+  return NextResponse.json({ plan: mealPlanFromDb(saved) });
 }

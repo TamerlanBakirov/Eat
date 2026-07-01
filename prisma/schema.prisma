@@ -1,0 +1,89 @@
+// Prisma schema for the Eat app.
+// Uses SQLite by default; swap the datasource provider/url to Postgres for prod.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  profile      Profile?
+  mealPlans    MealPlan[]
+  foodEntries  FoodEntry[]
+  shoppingItems ShoppingItem[]
+}
+
+model Profile {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  age           Int
+  gender        String
+  heightCm      Float
+  weightKg      Float
+  goal          String
+  activityLevel String
+  dietType      String
+  mealsPerDay   Int
+  allergies     String  // JSON-encoded string[]
+
+  targetCalories Int
+  proteinTarget  Int
+  carbsTarget    Int
+  fatTarget      Int
+
+  updatedAt     DateTime @updatedAt
+}
+
+model MealPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  summary     String
+  days        String   // JSON-encoded DayPlan[]
+  generatedAt DateTime @default(now())
+
+  @@index([userId, generatedAt])
+}
+
+model FoodEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date      String   // YYYY-MM-DD
+  name      String
+  mealType  String
+  calories  Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model ShoppingItem {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name    String
+  amount  String
+  checked Boolean @default(false)
+  sort    Int     @default(0)
+
+  @@index([userId])
+}

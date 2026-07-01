@@ -10,7 +10,8 @@ import type { UserProfile } from "@/lib/types";
 import { Button, Card } from "./ui";
 
 export function ProfileTab({ profile }: { profile: UserProfile }) {
-  const resetProfile = useAppStore((s) => s.resetProfile);
+  const logout = useAppStore((s) => s.logout);
+  const user = useAppStore((s) => s.user);
 
   const rows: [string, string][] = [
     ["İsim", profile.name],
@@ -52,14 +53,14 @@ export function ProfileTab({ profile }: { profile: UserProfile }) {
         ))}
       </Card>
 
-      <Button
-        variant="danger"
-        className="w-full"
-        onClick={() => {
-          if (confirm("Tüm verilerin silinecek. Emin misin?")) resetProfile();
-        }}
-      >
-        Profili sıfırla
+      {user && (
+        <p className="text-center text-xs text-slate-400">
+          Giriş yapılan hesap: {user.email}
+        </p>
+      )}
+
+      <Button variant="danger" className="w-full" onClick={() => logout()}>
+        Çıkış yap
       </Button>
     </div>
   );

@@ -20,8 +20,10 @@ import { Button, Card, cn } from "./ui";
 const TOTAL_STEPS = 4;
 
 export function Onboarding() {
-  const setProfile = useAppStore((s) => s.setProfile);
+  const saveProfile = useAppStore((s) => s.saveProfile);
   const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [age, setAge] = useState(30);
@@ -52,7 +54,7 @@ export function Onboarding() {
     [targetCalories, dietType]
   );
 
-  function finish() {
+  async function finish() {
     const profile: UserProfile = {
       name: name.trim() || "Misafir",
       age,
@@ -70,7 +72,14 @@ export function Onboarding() {
       targetCalories,
       targetMacros,
     };
-    setProfile(profile);
+    setSaving(true);
+    setError(null);
+    try {
+      await saveProfile(profile);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kaydedilemedi.");
+      setSaving(false);
+    }
   }
 
   const canNext =
@@ -250,11 +259,15 @@ export function Onboarding() {
             Devam
           </Button>
         ) : (
-          <Button className="flex-1" onClick={finish}>
-            Başla
+          <Button className="flex-1" onClick={finish} disabled={saving}>
+            {saving ? "Kaydediliyor…" : "Başla"}
           </Button>
         )}
       </div>
+
+      {error && (
+        <p className="mt-3 text-center text-sm text-red-600">{error}</p>
+      )}
 
       <style jsx global>{`
         .input {

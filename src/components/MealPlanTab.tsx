@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { MEAL_LABELS, MEAL_ORDER } from "@/lib/labels";
-import { buildShoppingList } from "@/lib/shopping";
-import { useAppStore, todayKey } from "@/lib/store";
-import type { Meal, MealPlan, UserProfile } from "@/lib/types";
+import { useAppStore } from "@/lib/store";
+import type { Meal } from "@/lib/types";
 import { Button, Card, cn } from "./ui";
 
-export function MealPlanTab({ profile }: { profile: UserProfile }) {
+export function MealPlanTab() {
   const mealPlan = useAppStore((s) => s.mealPlan);
-  const setMealPlan = useAppStore((s) => s.setMealPlan);
-  const setShoppingList = useAppStore((s) => s.setShoppingList);
+  const generateMealPlan = useAppStore((s) => s.generateMealPlan);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeDay, setActiveDay] = useState(0);
@@ -19,16 +17,7 @@ export function MealPlanTab({ profile }: { profile: UserProfile }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/meal-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Bir hata oluştu");
-      const plan = data.plan as MealPlan;
-      setMealPlan(plan);
-      setShoppingList(buildShoppingList(plan));
+      await generateMealPlan();
       setActiveDay(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Bilinmeyen hata");
@@ -114,8 +103,8 @@ function MealCard({ meal }: { meal: Meal }) {
   const addFood = useAppStore((s) => s.addFood);
   const [added, setAdded] = useState(false);
 
-  function logMeal() {
-    addFood(todayKey(), {
+  async function logMeal() {
+    await addFood({
       name: meal.name,
       mealType: meal.type,
       calories: meal.calories,

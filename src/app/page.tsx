@@ -1,24 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { AuthScreen } from "@/components/AuthScreen";
 import { Dashboard } from "@/components/Dashboard";
 import { Onboarding } from "@/components/Onboarding";
 import { useAppStore } from "@/lib/store";
 
 export default function Home() {
+  const status = useAppStore((s) => s.status);
+  const user = useAppStore((s) => s.user);
   const profile = useAppStore((s) => s.profile);
-  // zustand persist hydrates from localStorage on the client only;
-  // wait for mount to avoid a hydration mismatch.
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  const bootstrap = useAppStore((s) => s.bootstrap);
 
-  if (!ready) {
+  useEffect(() => {
+    bootstrap();
+  }, [bootstrap]);
+
+  if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center text-brand-600">
-        <span className="text-2xl font-extrabold">🥗 Eat</span>
+        <span className="animate-pulse text-2xl font-extrabold">🥗 Eat</span>
       </div>
     );
   }
 
-  return profile ? <Dashboard profile={profile} /> : <Onboarding />;
+  if (!user) return <AuthScreen />;
+  if (!profile) return <Onboarding />;
+  return <Dashboard profile={profile} />;
 }

@@ -24,7 +24,7 @@ export function Dashboard({ profile }: { profile: UserProfile }) {
     <div className="mx-auto min-h-screen max-w-md">
       <main className="px-4 pb-28 pt-8">
         {tab === "today" && <TodayTab profile={profile} />}
-        {tab === "plan" && <MealPlanTab profile={profile} />}
+        {tab === "plan" && <MealPlanTab />}
         {tab === "shopping" && <ShoppingTab />}
         {tab === "profile" && <ProfileTab profile={profile} />}
       </main>

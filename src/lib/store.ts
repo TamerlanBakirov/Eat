@@ -1,87 +1,124 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { api } from "./api";
 import type {
-  FoodLog,
+  AuthUser,
   LoggedFood,
   MealPlan,
+  MealType,
   ShoppingItem,
   UserProfile,
 } from "./types";
 
+export function todayKey(): string {
+  const d = new Date();
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+}
+
 interface AppState {
+  status: "loading" | "ready";
+  user: AuthUser | null;
   profile: UserProfile | null;
   mealPlan: MealPlan | null;
-  foodLog: FoodLog;
+  foods: LoggedFood[]; // today's entries
   shoppingList: ShoppingItem[];
 
-  setProfile: (profile: UserProfile) => void;
-  resetProfile: () => void;
+  bootstrap: () => Promise<void>;
+  afterAuth: (user: AuthUser) => Promise<void>;
+  logout: () => Promise<void>;
 
-  setMealPlan: (plan: MealPlan) => void;
+  saveProfile: (profile: UserProfile) => Promise<void>;
 
-  addFood: (date: string, food: Omit<LoggedFood, "id">) => void;
-  removeFood: (date: string, id: string) => void;
+  generateMealPlan: () => Promise<void>;
 
-  setShoppingList: (items: ShoppingItem[]) => void;
-  toggleShoppingItem: (index: number) => void;
+  addFood: (food: Omit<LoggedFood, "id">) => Promise<void>;
+  removeFood: (id: string) => Promise<void>;
+
+  toggleShoppingItem: (id: string, checked: boolean) => Promise<void>;
 }
 
-export const useAppStore = create<AppState>()(
-  persist(
-    (set) => ({
+async function loadUserData(set: (partial: Partial<AppState>) => void) {
+  const [{ profile }, { plan }, { foods }, { items }] = await Promise.all([
+    api.getProfile(),
+    api.getMealPlan(),
+    api.getFoods(todayKey()),
+    api.getShopping(),
+  ]);
+  set({
+    profile,
+    mealPlan: plan,
+    foods,
+    shoppingList: items,
+  });
+}
+
+export const useAppStore = create<AppState>()((set, get) => ({
+  status: "loading",
+  user: null,
+  profile: null,
+  mealPlan: null,
+  foods: [],
+  shoppingList: [],
+
+  bootstrap: async () => {
+    try {
+      const { user } = await api.me();
+      if (user) {
+        set({ user });
+        await loadUserData(set);
+      }
+    } catch {
+      /* unauthenticated or offline */
+    } finally {
+      set({ status: "ready" });
+    }
+  },
+
+  afterAuth: async (user) => {
+    set({ user });
+    await loadUserData(set);
+  },
+
+  logout: async () => {
+    await api.logout().catch(() => {});
+    set({
+      user: null,
       profile: null,
       mealPlan: null,
-      foodLog: {},
+      foods: [],
       shoppingList: [],
+    });
+  },
 
-      setProfile: (profile) => set({ profile }),
-      resetProfile: () =>
-        set({
-          profile: null,
-          mealPlan: null,
-          foodLog: {},
-          shoppingList: [],
-        }),
+  saveProfile: async (profile) => {
+    const { profile: saved } = await api.saveProfile(profile);
+    set({ profile: saved });
+  },
 
-      setMealPlan: (mealPlan) => set({ mealPlan }),
+  generateMealPlan: async () => {
+    const { plan } = await api.generateMealPlan();
+    const { items } = await api.getShopping();
+    set({ mealPlan: plan, shoppingList: items });
+  },
 
-      addFood: (date, food) =>
-        set((state) => {
-          const entry: LoggedFood = {
-            ...food,
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          };
-          const dayList = state.foodLog[date] ?? [];
-          return {
-            foodLog: { ...state.foodLog, [date]: [...dayList, entry] },
-          };
-        }),
+  addFood: async (food) => {
+    const { food: saved } = await api.addFood({ ...food, date: todayKey() });
+    set({ foods: [...get().foods, saved] });
+  },
 
-      removeFood: (date, id) =>
-        set((state) => {
-          const dayList = state.foodLog[date] ?? [];
-          return {
-            foodLog: {
-              ...state.foodLog,
-              [date]: dayList.filter((f) => f.id !== id),
-            },
-          };
-        }),
+  removeFood: async (id) => {
+    set({ foods: get().foods.filter((f) => f.id !== id) });
+    await api.removeFood(id).catch(() => {});
+  },
 
-      setShoppingList: (shoppingList) => set({ shoppingList }),
-      toggleShoppingItem: (index) =>
-        set((state) => {
-          const list = [...state.shoppingList];
-          if (list[index]) {
-            list[index] = { ...list[index], checked: !list[index].checked };
-          }
-          return { shoppingList: list };
-        }),
-    }),
-    { name: "eat-app-storage" }
-  )
-);
+  toggleShoppingItem: async (id, checked) => {
+    set({
+      shoppingList: get().shoppingList.map((it) =>
+        it.id === id ? { ...it, checked } : it
+      ),
+    });
+    await api.toggleShopping(id, checked).catch(() => {});
+  },
+}));
 
-export function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+export type { MealType };

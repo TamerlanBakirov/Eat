@@ -82,7 +82,13 @@ export interface LoggedFood {
 export type FoodLog = Record<string, LoggedFood[]>;
 
 export interface ShoppingItem {
+  id?: string;
   name: string;
   amount: string;
   checked: boolean;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
 }

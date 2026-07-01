@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MEAL_LABELS, MEAL_ORDER } from "@/lib/labels";
-import { useAppStore, todayKey } from "@/lib/store";
+import { useAppStore } from "@/lib/store";
 import type { LoggedFood, MealType, UserProfile } from "@/lib/types";
 import { Button, Card, CalorieRing, MacroBar, cn } from "./ui";
 
@@ -19,12 +19,10 @@ function sumFoods(foods: LoggedFood[]) {
 }
 
 export function TodayTab({ profile }: { profile: UserProfile }) {
-  const date = todayKey();
-  const foodLog = useAppStore((s) => s.foodLog);
+  const foods = useAppStore((s) => s.foods);
   const removeFood = useAppStore((s) => s.removeFood);
   const [showAdd, setShowAdd] = useState(false);
 
-  const foods = foodLog[date] ?? [];
   const totals = sumFoods(foods);
   const m = profile.targetMacros;
 
@@ -69,9 +67,7 @@ export function TodayTab({ profile }: { profile: UserProfile }) {
         </Button>
       </div>
 
-      {showAdd && (
-        <AddFoodForm date={date} onDone={() => setShowAdd(false)} />
-      )}
+      {showAdd && <AddFoodForm onDone={() => setShowAdd(false)} />}
 
       {foods.length === 0 ? (
         <p className="rounded-xl bg-white py-8 text-center text-sm text-slate-400 ring-1 ring-slate-100">
@@ -106,7 +102,7 @@ export function TodayTab({ profile }: { profile: UserProfile }) {
                           {Math.round(f.calories)} kcal
                         </span>
                         <button
-                          onClick={() => removeFood(date, f.id)}
+                          onClick={() => removeFood(f.id)}
                           className="text-slate-300 hover:text-red-500"
                           aria-label="Sil"
                         >
@@ -125,13 +121,7 @@ export function TodayTab({ profile }: { profile: UserProfile }) {
   );
 }
 
-function AddFoodForm({
-  date,
-  onDone,
-}: {
-  date: string;
-  onDone: () => void;
-}) {
+function AddFoodForm({ onDone }: { onDone: () => void }) {
   const addFood = useAppStore((s) => s.addFood);
   const [name, setName] = useState("");
   const [mealType, setMealType] = useState<MealType>("breakfast");
@@ -139,18 +129,24 @@ function AddFoodForm({
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function submit() {
+  async function submit() {
     if (!name.trim() || !calories) return;
-    addFood(date, {
-      name: name.trim(),
-      mealType,
-      calories: Number(calories) || 0,
-      protein: Number(protein) || 0,
-      carbs: Number(carbs) || 0,
-      fat: Number(fat) || 0,
-    });
-    onDone();
+    setSaving(true);
+    try {
+      await addFood({
+        name: name.trim(),
+        mealType,
+        calories: Number(calories) || 0,
+        protein: Number(protein) || 0,
+        carbs: Number(carbs) || 0,
+        fat: Number(fat) || 0,
+      });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -187,8 +183,8 @@ function AddFoodForm({
         <Button variant="ghost" onClick={onDone} className="flex-1">
           İptal
         </Button>
-        <Button onClick={submit} className="flex-1">
-          Ekle
+        <Button onClick={submit} className="flex-1" disabled={saving}>
+          {saving ? "Ekleniyor…" : "Ekle"}
         </Button>
       </div>
     </Card>

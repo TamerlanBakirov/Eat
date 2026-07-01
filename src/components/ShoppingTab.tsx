@@ -28,10 +28,10 @@ export function ShoppingTab() {
             {remaining} ürün kaldı · {shoppingList.length} toplam
           </p>
           <Card className="divide-y divide-slate-100 p-0">
-            {shoppingList.map((item, i) => (
+            {shoppingList.map((item) => (
               <button
-                key={i}
-                onClick={() => toggle(i)}
+                key={item.id}
+                onClick={() => item.id && toggle(item.id, !item.checked)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left"
               >
                 <span
