@@ -1,7 +1,7 @@
 /* Egzersiz veritabanı.
    met: Metabolik eşdeğer — kalori hesabında kullanılır (kcal = MET × kg × saat).
-   type: "strength" (set/tekrar/ağırlık) veya "cardio" (süre/mesafe) */
-window.EXERCISE_DB = [
+   type: "strength" (set/tekrar/ağırlık) veya "cardio" (süre) */
+export const EXERCISE_DB = [
   // Göğüs
   { id: "bench-press", name: "Bench Press", cat: "Göğüs", type: "strength", met: 5 },
   { id: "incline-press", name: "Incline Dumbbell Press", cat: "Göğüs", type: "strength", met: 5 },
@@ -58,7 +58,7 @@ window.EXERCISE_DB = [
 ];
 
 /* Hazır antrenman programı şablonları */
-window.PROGRAM_TEMPLATES = [
+export const PROGRAM_TEMPLATES = [
   {
     id: "full-body",
     name: "Tüm Vücut (Başlangıç)",

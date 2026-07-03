@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "FitLife",
+    "slug": "fitlife",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#12151c"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tamerlanbakirov.fitlife"
+    },
+    "android": {
+      "package": "com.tamerlanbakirov.fitlife",
+      "adaptiveIcon": {
+        "backgroundColor": "#12151c"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

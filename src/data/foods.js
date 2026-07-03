@@ -1,6 +1,6 @@
-/* Besin veritabanı — değerler 100 g (veya belirtilen porsiyon) başınadır.
+/* Besin veritabanı — değerler 100 g başınadır.
    kcal: kalori, p: protein (g), c: karbonhidrat (g), f: yağ (g) */
-window.FOOD_DB = [
+export const FOOD_DB = [
   // Kahvaltılık
   { id: "yumurta", name: "Yumurta (haşlanmış)", cat: "Kahvaltılık", kcal: 155, p: 13, c: 1.1, f: 11 },
   { id: "beyaz-peynir", name: "Beyaz Peynir", cat: "Kahvaltılık", kcal: 264, p: 14, c: 4.1, f: 21 },
