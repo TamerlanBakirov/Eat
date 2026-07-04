@@ -21,7 +21,17 @@ export const DEFAULT_STATE = {
   /* weights: [{ date: "YYYY-MM-DD", kg: 75 }] — tarihe göre sıralı */
   weights: [],
   customFoods: [],
-  settings: { theme: "dark" },
+  /* measurements: [{ date, chest, waist, hip, arm, thigh }] */
+  measurements: [],
+  /* photos: [{ id, date, uri, note }] — ilerleme fotoğrafları */
+  photos: [],
+  /* favorites: [exerciseId] */
+  favorites: [],
+  /* AI ile üretilen spor + beslenme programı (onboarding sonrası) */
+  program: null,
+  /* customTemplates: [{ id, name, exercises }] — kullanıcı şablonları */
+  customTemplates: [],
+  settings: { theme: "dark", onboarded: false, apiKey: "", notifyWater: false, notifyWorkout: false, waterGoal: 8, accent: "green" },
 };
 
 export function emptyDay() {
@@ -143,6 +153,51 @@ function reducer(state, action) {
 
     case "SET_THEME":
       return { ...state, settings: { ...state.settings, theme: action.theme } };
+
+    case "SET_SETTING":
+      return { ...state, settings: { ...state.settings, [action.key]: action.value } };
+
+    case "SET_PROGRAM":
+      return { ...state, program: action.program };
+
+    case "ADD_MEASUREMENT": {
+      const measurements = state.measurements
+        .filter((m) => m.date !== action.date)
+        .concat({ date: action.date, ...action.values })
+        .sort((a, b) => a.date.localeCompare(b.date));
+      return { ...state, measurements };
+    }
+
+    case "REMOVE_MEASUREMENT":
+      return { ...state, measurements: state.measurements.filter((m) => m.date !== action.date) };
+
+    case "ADD_PHOTO":
+      return { ...state, photos: [action.photo, ...state.photos] };
+
+    case "REMOVE_PHOTO":
+      return { ...state, photos: state.photos.filter((p) => p.id !== action.id) };
+
+    case "TOGGLE_FAVORITE": {
+      const has = state.favorites.includes(action.exerciseId);
+      return { ...state, favorites: has ? state.favorites.filter((f) => f !== action.exerciseId) : [...state.favorites, action.exerciseId] };
+    }
+
+    case "SAVE_TEMPLATE":
+      return { ...state, customTemplates: [...state.customTemplates, action.template] };
+
+    case "REMOVE_TEMPLATE":
+      return { ...state, customTemplates: state.customTemplates.filter((t) => t.id !== action.id) };
+
+    case "IMPORT_DATA":
+      return { ...structuredClone(DEFAULT_STATE), ...action.state, settings: { ...DEFAULT_STATE.settings, ...(action.state.settings || {}) } };
+
+    case "COMPLETE_ONBOARDING":
+      return {
+        ...state,
+        profile: { ...state.profile, ...action.profile },
+        program: action.program,
+        settings: { ...state.settings, onboarded: true },
+      };
 
     case "RESET":
       return structuredClone(DEFAULT_STATE);

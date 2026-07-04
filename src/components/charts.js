@@ -1,9 +1,23 @@
-/* react-native-svg tabanlı grafikler: halka, çubuk, çizgi */
-import React from "react";
+/* react-native-svg tabanlı grafikler: halka, çubuk, çizgi. Çubuk/çizgi dokunulabilir (tooltip). */
+import React, { useState } from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import Svg, { Circle, Rect, Line, Path, Text as SvgText } from "react-native-svg";
 import { useTheme } from "./ui";
 import { fmt } from "../lib/utils";
+
+/* Grafik üstünde seçilen değeri gösteren küçük etiket */
+function Tooltip({ c, label, value, unit }) {
+  if (label == null) return <View style={{ height: 22 }} />;
+  return (
+    <View style={{ height: 22, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ backgroundColor: c.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 3 }}>
+        <Text style={{ color: c.text, fontSize: 12, fontWeight: "700" }}>
+          {label} · <Text style={{ color: c.primary }}>{fmt(value)} {unit}</Text>
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 /* Dairesel ilerleme halkası */
 export function Ring({ value, target, size = 140, stroke = 12, color, label, sublabel }) {
@@ -35,9 +49,10 @@ export function Ring({ value, target, size = 140, stroke = 12, color, label, sub
   );
 }
 
-/* Çubuk grafik; opsiyonel hedef çizgisi */
-export function BarChart({ data, target, height = 170, color, width }) {
+/* Çubuk grafik; opsiyonel hedef çizgisi. Çubuğa dokun → tooltip. */
+export function BarChart({ data, target, height = 170, color, width, unit = "kcal" }) {
   const c = useTheme();
+  const [sel, setSel] = useState(null);
   const { width: winW } = useWindowDimensions();
   const w = width || winW - 64;
   const padT = 16, padB = 22;
@@ -47,45 +62,48 @@ export function BarChart({ data, target, height = 170, color, width }) {
   const col = color || c.primary;
 
   return (
-    <Svg width={w} height={height}>
-      {data.map((d, i) => {
-        const h = (d.value / maxVal) * innerH;
-        const x = i * barW + barW * 0.18;
-        const y = padT + innerH - h;
-        const bw = barW * 0.64;
-        return (
-          <React.Fragment key={i}>
-            <Rect
-              x={x} y={d.value > 0 ? y : padT + innerH - 2}
-              width={bw} height={d.value > 0 ? Math.max(h, 2) : 2}
-              rx={4} fill={d.value > 0 ? col : c.surface2}
-            />
-            {d.value > 0 && (
-              <SvgText x={x + bw / 2} y={y - 4} textAnchor="middle" fontSize={9} fill={c.muted}>
-                {fmt(d.value)}
+    <View>
+      <Tooltip c={c} label={sel != null ? data[sel]?.label : null} value={sel != null ? data[sel]?.value : 0} unit={unit} />
+      <Svg width={w} height={height}>
+        {data.map((d, i) => {
+          const h = (d.value / maxVal) * innerH;
+          const x = i * barW + barW * 0.14;
+          const y = padT + innerH - h;
+          const bw = barW * 0.72;
+          const active = sel === i;
+          return (
+            <React.Fragment key={i}>
+              {/* Geniş dokunma alanı */}
+              <Rect x={i * barW} y={padT} width={barW} height={innerH} fill="transparent" onPress={() => setSel(active ? null : i)} />
+              <Rect
+                x={x} y={d.value > 0 ? y : padT + innerH - 2}
+                width={bw} height={d.value > 0 ? Math.max(h, 2) : 2}
+                rx={4} fill={d.value > 0 ? (active ? c.accent : col) : c.surface2}
+                onPress={() => setSel(active ? null : i)}
+              />
+              <SvgText x={x + bw / 2} y={height - 6} textAnchor="middle" fontSize={10} fill={active ? c.text : c.muted} fontWeight={active ? "700" : "400"}>
+                {d.label}
               </SvgText>
-            )}
-            <SvgText x={x + bw / 2} y={height - 6} textAnchor="middle" fontSize={10} fill={c.muted}>
-              {d.label}
-            </SvgText>
-          </React.Fragment>
-        );
-      })}
-      {target ? (
-        <Line
-          x1={0} x2={w}
-          y1={padT + innerH - (target / maxVal) * innerH}
-          y2={padT + innerH - (target / maxVal) * innerH}
-          stroke={c.warning} strokeWidth={1.5} strokeDasharray="5 4"
-        />
-      ) : null}
-    </Svg>
+            </React.Fragment>
+          );
+        })}
+        {target ? (
+          <Line
+            x1={0} x2={w}
+            y1={padT + innerH - (target / maxVal) * innerH}
+            y2={padT + innerH - (target / maxVal) * innerH}
+            stroke={c.warning} strokeWidth={1.5} strokeDasharray="5 4"
+          />
+        ) : null}
+      </Svg>
+    </View>
   );
 }
 
-/* Çizgi grafik */
-export function LineChart({ data, height = 170, color, width }) {
+/* Çizgi grafik. Noktaya dokun → tooltip. */
+export function LineChart({ data, height = 170, color, width, unit = "kg" }) {
   const c = useTheme();
+  const [sel, setSel] = useState(null);
   const { width: winW } = useWindowDimensions();
   const w = width || winW - 64;
   const valid = data.filter((d) => d.value != null);
@@ -117,26 +135,27 @@ export function LineChart({ data, height = 170, color, width }) {
   });
 
   return (
-    <Svg width={w} height={height}>
-      <Path d={path} fill="none" stroke={col} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-      {data.map((d, i) => {
-        const x = xFor(i);
-        return (
-          <React.Fragment key={i}>
-            {d.value != null && (
-              <>
-                <Circle cx={x} cy={yFor(d.value)} r={4} fill={col} />
-                <SvgText x={x} y={yFor(d.value) - 9} textAnchor="middle" fontSize={9} fill={c.muted}>
-                  {fmt(d.value, 1)}
-                </SvgText>
-              </>
-            )}
-            <SvgText x={x} y={height - 6} textAnchor="middle" fontSize={10} fill={c.muted}>
-              {d.label}
-            </SvgText>
-          </React.Fragment>
-        );
-      })}
-    </Svg>
+    <View>
+      <Tooltip c={c} label={sel != null ? data[sel]?.label : null} value={sel != null ? data[sel]?.value : 0} unit={unit} />
+      <Svg width={w} height={height}>
+        <Path d={path} fill="none" stroke={col} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+        {data.map((d, i) => {
+          if (d.value == null) return null;
+          const x = xFor(i), y = yFor(d.value);
+          const active = sel === i;
+          return (
+            <React.Fragment key={i}>
+              <Circle cx={x} cy={y} r={12} fill="transparent" onPress={() => setSel(active ? null : i)} />
+              <Circle cx={x} cy={y} r={active ? 6 : 4} fill={active ? c.accent : col} stroke={active ? c.surface : "none"} strokeWidth={active ? 2 : 0} onPress={() => setSel(active ? null : i)} />
+            </React.Fragment>
+          );
+        })}
+        {data.map((d, i) => (
+          <SvgText key={"l" + i} x={xFor(i)} y={height - 6} textAnchor="middle" fontSize={10} fill={sel === i ? c.text : c.muted}>
+            {d.label}
+          </SvgText>
+        ))}
+      </Svg>
+    </View>
   );
 }

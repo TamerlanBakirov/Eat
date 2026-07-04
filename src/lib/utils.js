@@ -114,3 +114,25 @@ export function burnedCalories(met, weightKg, minutes) {
 export function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
+
+/* Öğün adları */
+export const MEAL_NAMES = {
+  kahvalti: "Kahvaltı",
+  ogle: "Öğle Yemeği",
+  aksam: "Akşam Yemeği",
+  ara: "Ara Öğün",
+};
+
+/* Saate göre öğün tespiti — yemek eklerken varsayılan öğünü belirler */
+export function currentMealKey(d = new Date()) {
+  const h = d.getHours();
+  if (h >= 4 && h < 11) return "kahvalti";
+  if (h >= 11 && h < 16) return "ogle";
+  if (h >= 16 && h < 22) return "aksam";
+  return "ara";
+}
+
+/* 24 saatlik "HH:MM" damgası */
+export function timeStamp(d = new Date()) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}

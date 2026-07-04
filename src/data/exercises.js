@@ -1,7 +1,53 @@
+/* Egzersiz görselleri — free-exercise-db (CC0 lisans, github.com/yuhonas/free-exercise-db).
+   Uzaktan yüklenir; yüklenemezse arayüzde kas grubu ikonuna düşer. */
+export const EXERCISE_IMAGES = {
+  "bench-press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_Powerlifting/0.jpg",
+  "incline-press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg",
+  "chest-fly": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Flyes/0.jpg",
+  "push-up": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg",
+  "dips": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg",
+  "pull-up": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/0.jpg",
+  "lat-pulldown": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
+  "barbell-row": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg",
+  "seated-row": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg",
+  "deadlift": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg",
+  "squat": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/0.jpg",
+  "leg-press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg",
+  "lunge": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/0.jpg",
+  "leg-curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg",
+  "leg-extension": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg",
+  "calf-raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg",
+  "hip-thrust": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg",
+  "overhead-press": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/0.jpg",
+  "lateral-raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg",
+  "front-raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Dumbbell_Raise/0.jpg",
+  "face-pull": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg",
+  "shrug": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Shrug/0.jpg",
+  "biceps-curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg",
+  "hammer-curl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg",
+  "triceps-pushdown": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg",
+  "skull-crusher": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Skullcrusher/0.jpg",
+  "crunch": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/0.jpg",
+  "plank": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg",
+  "leg-raise": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg",
+  "russian-twist": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg",
+  "kosu": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Running_Treadmill/0.jpg",
+  "yuruyus": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Walking_Treadmill/0.jpg",
+  "bisiklet": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycling_Stationary/0.jpg",
+  "yuzme": null,
+  "ip-atlama": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/0.jpg",
+  "eliptik": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/0.jpg",
+  "merdiven": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stairmaster/0.jpg",
+  "kurek": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/0.jpg",
+  "hiit": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/0.jpg",
+  "yoga": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg",
+};
+
 /* Egzersiz veritabanı.
    met: Metabolik eşdeğer — kalori hesabında kullanılır (kcal = MET × kg × saat).
-   type: "strength" (set/tekrar/ağırlık) veya "cardio" (süre) */
-export const EXERCISE_DB = [
+   type: "strength" (set/tekrar/ağırlık) veya "cardio" (süre)
+   img: görsel — EXERCISE_IMAGES'ten otomatik eklenir. */
+const EXERCISE_DB_RAW = [
   // Göğüs
   { id: "bench-press", name: "Bench Press", cat: "Göğüs", type: "strength", met: 5 },
   { id: "incline-press", name: "Incline Dumbbell Press", cat: "Göğüs", type: "strength", met: 5 },
@@ -56,6 +102,9 @@ export const EXERCISE_DB = [
   { id: "hiit", name: "HIIT Antrenmanı", cat: "Kardiyo", type: "cardio", met: 10 },
   { id: "yoga", name: "Yoga", cat: "Kardiyo", type: "cardio", met: 3 },
 ];
+
+/* Her egzersize görselini ekle */
+export const EXERCISE_DB = EXERCISE_DB_RAW.map((e) => ({ ...e, img: EXERCISE_IMAGES[e.id] || null }));
 
 /* Hazır antrenman programı şablonları */
 export const PROGRAM_TEMPLATES = [
